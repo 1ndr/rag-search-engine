@@ -11,3 +11,4 @@ wheels/
 
 #files
 data/
+uv.lock
