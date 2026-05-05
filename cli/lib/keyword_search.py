@@ -1,10 +1,12 @@
 from .search_utils import DEFAULT_SEARCH_LIMIT, load_movies
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
+    lower_query = query.lower()
     movies = load_movies()
     results = []
+
     for movie in movies:
-        if query in movie["title"]:
+        if query in movie["title"].lower():
             results.append(movie)
             if len(results) >= limit:
                 break
