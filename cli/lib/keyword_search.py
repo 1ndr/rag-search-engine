@@ -1,4 +1,6 @@
 from .search_utils import DEFAULT_SEARCH_LIMIT, load_movies
+import string
+
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
     lower_query = query.lower()
