@@ -1,4 +1,4 @@
-from .search_utils import DEFAULT_SEARCH_LIMIT, load_movies
+from .search_utils import DEFAULT_SEARCH_LIMIT, load_movies, load_stopwords
 import string
 
 
@@ -33,11 +33,12 @@ def preprocess_text(text: str) -> str:
 
 
 def tokenize_text(text: str) -> list[str]:
+    stopwords = load_stopwords()
     text = preprocess_text(text)
     tokens = text.split()
     valid_tokens = []
 
     for token in tokens:
-        if token:
+        if token and token not in stopwords:
             valid_tokens.append(token)
     return valid_tokens
