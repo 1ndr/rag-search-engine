@@ -10,8 +10,8 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
     results = []
 
     for movie in movies:
-        query_tokens = tokenize_text(query)
-        title_tokens = tokenize_text(movie["title"])
+        query_tokens = tokenise_text(query)
+        title_tokens = tokenise_text(movie["title"])
         if has_mathing_token(query_tokens, title_tokens):
             results.append(movie)
             if len(results) >= limit:
@@ -34,7 +34,7 @@ def preprocess_text(text: str) -> str:
     return text
 
 
-def tokenize_text(text: str) -> list[str]:
+def tokenise_text(text: str) -> list[str]:
     stopwords = load_stopwords()
     text = preprocess_text(text)
     tokens = text.split()
