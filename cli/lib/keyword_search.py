@@ -63,17 +63,21 @@ def build_command() -> None:
 
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
-    tokenise_query = tokenise_text(query)
+    idx = InvertedIndex()
+    idx.load()
+    query_tokens = tokenise_text(query)
+    seen, results = set(), []
 
-    try:
-        movies_index = InvertedIndex()
-        movies_index.load()
-    except FileNotFoundError:
-        print("File not found in cache")
-        return
-
-    results = []
-
+    for query_token in query_tokens:
+        matching_doc_ids = idx.get_documents(query_token)
+        for doc_id in matching_doc_ids:
+            if doc_id in seen:
+                continue
+            seen.add(doc_id)
+            doc = idx.docmap[doc_id]
+            results.append(doc)
+            if len(results) >= limit:
+                return results
     return results
 
 
