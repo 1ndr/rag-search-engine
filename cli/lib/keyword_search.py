@@ -48,27 +48,31 @@ class InvertedIndex:
         with open(self.docmap_path, "wb") as f:
             pickle.dump(self.docmap, f)
 
+    def load(self) -> None:
+        with open(self.index_path, "rb") as f:
+            self.index = pickle.load(f)
+
+        with open(self.docmap_path, "rb") as f:
+            self.docmap = pickle.load(f)
+
 
 def build_command() -> None:
     idx = InvertedIndex()
     idx.build()
     idx.save()
-    docs = idx.get_documents("merida")
-    print(f"First document for token 'merida' = {docs[0]}")
 
 
 def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
-    lower_query = query.lower()
-    movies = load_movies()
-    results = []
+    tokenise_query = tokenise_text(query)
 
-    for movie in movies:
-        query_tokens = tokenise_text(query)
-        title_tokens = tokenise_text(movie["title"])
-        if has_mathing_token(query_tokens, title_tokens):
-            results.append(movie)
-            if len(results) >= limit:
-                break
+    try:
+        movies_index = InvertedIndex()
+        movies_index.load()
+    except FileNotFoundError:
+        print("File not found in cache")
+        return
+
+    results = []
 
     return results
 
