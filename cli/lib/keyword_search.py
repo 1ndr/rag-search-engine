@@ -1,7 +1,7 @@
 import os 
 import pickle
 import string
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 from .search_utils import (
     CACHE_DIR,
@@ -16,14 +16,20 @@ class InvertedIndex:
     def __init__(self) -> None:
         self.index = defaultdict(set)
         self.docmap:dict[int, dict] = {}
+        self.term_frequencies:dict[int, Counter] = defaultdict(Counter)
+ 
         self.index_path = os.path.join(CACHE_DIR, "index.pkl")
         self.docmap_path = os.path.join(CACHE_DIR, "docmap.pkl")
+        self.tf_path = os.path.join(CACHE_DIR, "term_frequencies.pkl")
 
     def __add_document(self, doc_id: int, text: str) -> None:
         tokenised_doc = tokenise_text(text)
 
         for token in set(tokenised_doc):
             self.index[token].add(doc_id)
+
+        for token in tokenised_doc:
+            self.term_frequencies[doc_id][token]+= 1
 
     def get_documents(self, term: str) -> list[int]:
         doc_ids = self.index.get(term, set())
@@ -41,19 +47,31 @@ class InvertedIndex:
 
     def save(self) -> None:
         os.makedirs(CACHE_DIR, exist_ok=True)
-        
         with open(self.index_path, "wb") as f:
             pickle.dump(self.index, f)
-        
         with open(self.docmap_path, "wb") as f:
             pickle.dump(self.docmap, f)
+        with open(self.tf_path, "wb") as f:
+            pickle.dump(self.term_frequencies, f)
 
     def load(self) -> None:
         with open(self.index_path, "rb") as f:
             self.index = pickle.load(f)
-
         with open(self.docmap_path, "rb") as f:
             self.docmap = pickle.load(f)
+        with open(self.tf_path, "rb") as f:
+            self.term_frequencies = pickle.load(f)
+
+    def get_tf(self, doc_id: int, term: str) -> int:
+        tokenised_term = tokenise_text(term)
+
+        if len(tokenised_term) > 1:
+            raise ValueError(f"more than one token detected for {term}")
+
+        count = self.term_frequencies[doc_id][tokenised_term[0]]
+        if count:
+            return count
+        return 0
 
 
 def build_command() -> None:
@@ -79,6 +97,11 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
             if len(results) >= limit:
                 return results
     return results
+
+def tf_command(doc_id: int, token: str) -> int:
+    idx = InvertedIndex()
+    idx.load()
+    return idx.get_tf(doc_id, token)
 
 
 def has_mathing_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
