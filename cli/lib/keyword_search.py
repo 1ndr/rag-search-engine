@@ -1,7 +1,10 @@
+import math
 import os 
 import pickle
 import string
+
 from collections import defaultdict, Counter
+from nltk.stem import PorterStemmer
 
 from .search_utils import (
     CACHE_DIR,
@@ -10,7 +13,6 @@ from .search_utils import (
     load_stopwords,
 )
 
-from nltk.stem import PorterStemmer
 
 class InvertedIndex:
     def __init__(self) -> None:
@@ -65,13 +67,25 @@ class InvertedIndex:
     def get_tf(self, doc_id: int, term: str) -> int:
         tokenised_term = tokenise_text(term)
 
-        if len(tokenised_term) > 1:
-            raise ValueError(f"more than one token detected for {term}")
+        if len(tokenised_term) != 1:
+            raise ValueError("term must be a single token")
 
         count = self.term_frequencies[doc_id][tokenised_term[0]]
+
         if count:
             return count
         return 0
+
+    def get_idf(self, term:str) -> float:
+        tokens = tokenise_text(term)
+        if len(tokens) !=1:
+            raise ValueError("term must be a single token")
+
+        token = tokens[0]
+        total_doc_count = len(self.docmap)
+        term_match_doc_count = len(self.get_documents(token))
+        return math.log((total_doc_count + 1) / (term_match_doc_count + 1))
+
 
 
 def build_command() -> None:
@@ -103,6 +117,11 @@ def tf_command(doc_id: int, token: str) -> int:
     idx.load()
     return idx.get_tf(doc_id, token)
 
+
+def idf_command(term: str) -> float:
+    idx = InvertedIndex()
+    idx.load()
+    return idx.get_idf(term)
 
 def has_mathing_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
     for query_token in query_tokens:
