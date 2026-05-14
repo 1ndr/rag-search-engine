@@ -86,6 +86,9 @@ class InvertedIndex:
         term_match_doc_count = len(self.get_documents(token))
         return math.log((total_doc_count + 1) / (term_match_doc_count + 1))
 
+    def get_tf_idf(self, doc_id:int, term:str) -> float:
+        return self.get_tf(doc_id, term) * self.get_idf(term)
+
 
 
 def build_command() -> None:
@@ -122,6 +125,13 @@ def idf_command(term: str) -> float:
     idx = InvertedIndex()
     idx.load()
     return idx.get_idf(term)
+
+
+def tf_idf_command(doc_id: int, term:str) -> float:
+    idx = InvertedIndex()
+    idx.load()
+    return idx.get_tf_idf(doc_id, term)
+
 
 def has_mathing_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
     for query_token in query_tokens:
