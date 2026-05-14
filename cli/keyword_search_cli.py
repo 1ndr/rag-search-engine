@@ -6,8 +6,15 @@ from lib.keyword_search import (
     tf_command,
     idf_command,
     bm25_idf_command,
+    bm25_tf_command,
     tf_idf_command
 )
+
+from lib.search_utils import (
+    BM25_TF_COMPONENT_K1_DEFAULT,
+    BM25_TF_COMPONENT_B_DEFAULT
+)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
@@ -24,6 +31,12 @@ def main() -> None:
 
     idf_parser = subparsers.add_parser("idf", help="Returns the Inverse Document Frequency of a token")
     idf_parser.add_argument("term", type=str, help="term to be searched for")
+
+    bm25_tf_parser = subparsers.add_parser("bm25tf", help="Get BM25 TF score for a given document ID and term")
+    bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
+    bm25_tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_TF_COMPONENT_K1_DEFAULT, help="Tunable BM25 K1 parameter")
+    bm25_tf_parser.add_argument("b", type=float, nargs='?', default=BM25_TF_COMPONENT_B_DEFAULT, help="Tunable BM25 b parameter")
 
     bm25_idf_parser = subparsers.add_parser("bm25idf", help="Get BM25 IDF score for a given term")
     bm25_idf_parser.add_argument("term", type=str, help="Term to get BM25 IDF score for")
@@ -57,10 +70,15 @@ def main() -> None:
             idf = idf_command(args.term)
             print(f"Inverse document frequency of '{args.term}': {idf:.2f}")
 
+        case "bm25tf":
+            print(f"Finding BM25 Term Freqeuncy for: '{args.term}' in document: {args.doc_id} with k1 parameter of {args.k1} and b paramater of {args.b}")
+            bm25_tf = bm25_tf_command(args.doc_id, args.term, args.k1, args.b)
+            print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25_tf:.2f}")
+
         case "bm25idf":
-            print(f"Finding Inverse Document Frqeuency for '{args.term}'")
-            bm_25_idf = bm25_idf_command(args.term)
-            print(f"BM25 IDF score of '{args.term}': {bm_25_idf:.2f}")
+            print(f"Finding BM25 Inverse Document Frqeuency for '{args.term}'")
+            bm25_idf = bm25_idf_command(args.term)
+            print(f"BM25 IDF score of '{args.term}': {bm25_idf:.2f}")
 
         case "tfidf":
             print(f"Finding Term Frequency - Inverse Document Frequency score for '{args.term}'")
