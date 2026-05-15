@@ -7,12 +7,14 @@ from lib.keyword_search import (
     idf_command,
     bm25_idf_command,
     bm25_tf_command,
-    tf_idf_command
+    tf_idf_command,
+    bm25_search_command
 )
 
 from lib.search_utils import (
     BM25_TF_COMPONENT_K1_DEFAULT,
-    BM25_TF_COMPONENT_B_DEFAULT
+    BM25_TF_COMPONENT_B_DEFAULT,
+    DEFAULT_SEARCH_LIMIT
 )
 
 
@@ -44,6 +46,10 @@ def main() -> None:
     tf_idf_parser = subparsers.add_parser("tfidf", help="Returns the Term Freqeuncy - Inverse Document Freqeuncy score of a token in a doc")
     tf_idf_parser.add_argument("doc_id", type=int, help="document id")
     tf_idf_parser.add_argument("term", type=str, help="term to be serached for")
+    
+    bm25_search_parser = subparsers.add_parser("bm25search", help="Search movies using full BM25 scoring")
+    bm25_search_parser.add_argument("query", type=str, help="Search query")
+    bm25_search_parser.add_argument("limit", type=int, nargs='?', default=DEFAULT_SEARCH_LIMIT, help="optional limit to searches")
 
     args = parser.parse_args()
 
@@ -84,6 +90,12 @@ def main() -> None:
             print(f"Finding Term Frequency - Inverse Document Frequency score for '{args.term}'")
             tf_idf = tf_idf_command(args.doc_id, args.term)
             print(f"TF-IDF score of '{args.term}' in document '{args.doc_id}': {tf_idf:.2f}")
+
+        case "bm25search":
+            print(f"Searching for: '{args.query}'. limit = {args.limit}")
+            results = bm25_search_command(args.query, args.limit)
+            for i, (id, res) in enumerate(results, 1):
+                print(f"{i}. ({res['id']}) {res['title']} - Score: {res['bm25_score']:.2f}")
 
         case _:
             parser.print_help()
