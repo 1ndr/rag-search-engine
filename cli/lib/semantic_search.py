@@ -1,9 +1,33 @@
+import numpy as np
+
 from sentence_transformers import SentenceTransformer
 
 
 class SemanticSearch:
     def __init__(self, model_name="all-MiniLM-L6-v2"):
         self.model = SentenceTransformer(model_name)
+        self.embeddings = None
+        self.documents = None
+        self.document_map:dict[int, dict] = {}
+
+        self.embeddings_path = "cache/movie_embeddings.npy"
+
+    def build_embeddings(self, documents: list[dict]) -> None:
+        self.documents = documents
+
+        list_of_movie_strings = []
+        for doc in documents:
+            self.document_map[doc['id']] = doc
+            list_of_movie_strings.append(f"{doc['title']}: {doc['description']}")
+
+        self.embeddings = self.model.encode(list_of_movie_strings, show_progress_bar=True)
+        with open(self.embeddings_path, "wb") as f:
+            np.save(f, self.embeddings)
+        return self.embeddings
+
+
+
+
 
     def generate_embedding(self, text: str) -> list[float]:
         if text == '' or not text:
