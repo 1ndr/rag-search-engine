@@ -3,6 +3,8 @@ import numpy as np
 
 from .search_utils import (
     CACHE_DIR,
+    DEFAULT_SEARCH_LIMIT,
+    DEFAULT_CHUNK_SIZE,
     load_movies
 )
 from sentence_transformers import SentenceTransformer
@@ -30,7 +32,7 @@ class SemanticSearch:
             np.save(f, self.embeddings)
         return self.embeddings
 
-    def load_or_create_embeddings(self, documents: list[dict]) -> list[float]:
+    def load_or_create_embeddings(self, documents: list[dict]) -> list[list[float]]:
         self.__populate_documents(documents)
 
         if os.path.exists(self.embeddings_path):
@@ -46,10 +48,37 @@ class SemanticSearch:
         for doc in documents:
             self.document_map[doc['id']] = doc
 
-    def generate_embedding(self, text: str) -> list[float]:
+    def generate_embedding(self, text: str) -> list[list[float]]:
         if text == '' or not text:
             raise ValueError('text must not be empty')
         return self.model.encode([text])[0]
+
+    def cosine_similarity(self, vec1: list[float], vec2: list[float]) -> float:
+        dot_product = np.dot(vec1, vec2)
+        norm1 = np.linalg.norm(vec1)
+        norm2 = np.linalg.norm(vec2)
+
+        if norm1 == 0 or norm2 == 0:
+            return 0.0
+
+        return dot_product / (norm1 * norm2)
+
+    def search(self, query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[str]:
+        if self.embeddings is None or len(self.embeddings)==0:
+            raise ValueError("No embeddings loaded. Call 'load_or_create_embeddings' first.")
+        query_embedding = self.generate_embedding(query)
+
+        scores_lst = []
+        for i in range(len(self.embeddings)):
+            doc = self.documents[i]
+            doc_vec = self.embeddings[i]
+            cos_sim = self.cosine_similarity(doc_vec, query_embedding)
+            doc["score"] = cos_sim
+            scores_lst.append((cos_sim, doc))
+
+        sorted_scores = sorted(scores_lst, key=lambda x: x[0], reverse=True)
+        return sorted_scores[:limit]
+
 
 
 def verify_model() -> None:
@@ -73,3 +102,31 @@ def verify_embeddings() -> None:
     
     print(f"Number of docs: {len(movies)}")
     print(f"Embeddings shape: {embeddings.shape[0]} vectors in {embeddings.shape[1]} dimensions")
+    
+
+def embed_query_text(query):
+    search_instance = SemanticSearch()
+    embedding = search_instance.generate_embedding(query)
+    print(f"Query: {query}")
+    print(f"First 3 dimensions: {embedding[:3]}")
+    print(f"Shape: {embedding.shape}")
+
+
+def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
+    search_instance = SemanticSearch()
+    documents = load_movies()
+    search_instance.load_or_create_embeddings(documents)
+    return search_instance.search(query, limit)
+
+
+def chunk_command(text: str, chunk_size = DEFAULT_CHUNK_SIZE) -> list[list[str]]:
+    words = text.split()
+    return_lst = []
+
+    n_words = len(words)
+    i = 0
+    while i < n_words:
+        chunk_words = words[i: i + chunk_size]
+        return_lst.append(chunk_words)
+        i+=chunk_size
+    return return_lst
