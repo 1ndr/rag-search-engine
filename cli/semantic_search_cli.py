@@ -6,12 +6,15 @@ from lib.semantic_search import (
     verify_embeddings,
     embed_query_text,
     search_command,
-    chunk_command
+    chunk_command,
+    semantic_chunk_command
 )
 
 from lib.search_utils import (
     DEFAULT_SEARCH_LIMIT,
-    DEFAULT_CHUNK_SIZE
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_CHUNK_OVERLAP,
+    DEFAULT_SEMANTIC_CHUNK_SIZE
 )
 
 def main() -> None:
@@ -35,6 +38,13 @@ def main() -> None:
     chunk_command_parser = subparsers.add_parser("chunk", help="Chunking text")
     chunk_command_parser.add_argument("text", type=str, help="Text to be chunked")
     chunk_command_parser.add_argument("--chunk-size", type=int, default=DEFAULT_CHUNK_SIZE, help="optional limit for chunk size")
+    chunk_command_parser.add_argument("--overlap", type=int, default=DEFAULT_CHUNK_OVERLAP, help="optional overlap for chunking")
+
+    semantic_chunk_command_parser = subparsers.add_parser("semantic_chunk", help="Chunking text based on semantic meaning")
+    semantic_chunk_command_parser.add_argument("text", type=str, help="Text to be chunked")
+    semantic_chunk_command_parser.add_argument("--max-chunk-size", type=int, default=DEFAULT_SEMANTIC_CHUNK_SIZE, help="optional limit for max chunk size")
+    semantic_chunk_command_parser.add_argument("--overlap", type=int, default=DEFAULT_CHUNK_OVERLAP, help="optional overlap for chunking")
+    
 
     args = parser.parse_args()
     match args.command:
@@ -62,9 +72,16 @@ def main() -> None:
                 print(f"{i}. {res['title']} (score: {res['score']:.4f})\n{res['description']}")
 
         case "chunk":
-            print(f"Preparing Chunking process for '{args.text}':")
+            print(f"Preparing Chunking process for '{args.text}' with {args.overlap} overlaps...")
             print(f"Chunking {len(args.text)} characters")
-            chunks = chunk_command(args.text, args.chunk_size)
+            chunks = chunk_command(args.text, args.chunk_size, args.overlap)
+            for i, chunk in enumerate(chunks, 1):
+                print(f"{i}. {" ".join(chunk)}")
+
+        case "semantic_chunk":
+            print(f"Preparing Semantic Chunking process for '{args.text}' with {args.overlap} overlaps...")
+            print(f"Semantically chunking {len(args.text)} characters")
+            chunks = semantic_chunk_command(args.text, args.max_chunk_size, args.overlap)
             for i, chunk in enumerate(chunks, 1):
                 print(f"{i}. {" ".join(chunk)}")
 

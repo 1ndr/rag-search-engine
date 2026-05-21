@@ -1,3 +1,4 @@
+import re
 import os
 import numpy as np
 
@@ -5,6 +6,8 @@ from .search_utils import (
     CACHE_DIR,
     DEFAULT_SEARCH_LIMIT,
     DEFAULT_CHUNK_SIZE,
+    DEFAULT_CHUNK_OVERLAP,
+    DEFAULT_SEMANTIC_CHUNK_SIZE,
     load_movies
 )
 from sentence_transformers import SentenceTransformer
@@ -119,14 +122,24 @@ def search_command(query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[dict]:
     return search_instance.search(query, limit)
 
 
-def chunk_command(text: str, chunk_size = DEFAULT_CHUNK_SIZE) -> list[list[str]]:
+def chunk_command(text: str, chunk_size: int=DEFAULT_CHUNK_SIZE, overlap: int=DEFAULT_CHUNK_OVERLAP) -> list[str]:
     words = text.split()
-    return_lst = []
+    return chunking_input(words, chunk_size, overlap)
 
-    n_words = len(words)
+
+def semantic_chunk_command(text: str, chunk_size: int=DEFAULT_SEMANTIC_CHUNK_SIZE, overlap: int=DEFAULT_CHUNK_OVERLAP) -> list[str]:
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    return chunking_input(sentences, chunk_size, overlap)
+
+
+def chunking_input(input: list[str], chunk_size: int=DEFAULT_SEMANTIC_CHUNK_SIZE, overlap: int=DEFAULT_CHUNK_OVERLAP) -> list[str]:
+    return_lst = []
+    n_elements = len(input)
     i = 0
-    while i < n_words:
-        chunk_words = words[i: i + chunk_size]
-        return_lst.append(chunk_words)
-        i+=chunk_size
+    while i < n_elements:
+        chunk = input[i:i + chunk_size]
+        if return_lst and len(chunk) <= overlap:
+            break
+        return_lst.append(chunk)
+        i+=chunk_size - overlap
     return return_lst
